@@ -69,23 +69,30 @@ tasks.register("publishJavadocToNexus") {
             "/${project.group.toString().replace('.', '/')}" +
             "/${project.description}/${project.version}"
 
+        val latestUrl = "https://nexus.incredibleplugins.com/repository/plugin-javadoc-public" +
+            "/${project.group.toString().replace('.', '/')}" +
+            "/${project.description}/latest"
+
         extractDir.walkTopDown().filter { it.isFile }.forEach { file ->
             val relativePath = file.relativeTo(extractDir).path.replace('\\', '/')
-            val connection = URI("$baseUrl/$relativePath").toURL()
-                .openConnection() as HttpURLConnection
-            connection.requestMethod = "PUT"
-            connection.doOutput = true
-            connection.setRequestProperty("Authorization", "Basic $credentials")
-            connection.setRequestProperty("Content-Type", "application/octet-stream")
-            file.inputStream().use { it.copyTo(connection.outputStream) }
-            val code = connection.responseCode
-            if (code !in 200..299) {
-                throw GradleException("Failed to upload $relativePath — HTTP $code: ${connection.responseMessage}")
+            for (uploadUrl in listOf(baseUrl, latestUrl)) {
+                val connection = URI("$uploadUrl/$relativePath").toURL()
+                    .openConnection() as HttpURLConnection
+                connection.requestMethod = "PUT"
+                connection.doOutput = true
+                connection.setRequestProperty("Authorization", "Basic $credentials")
+                connection.setRequestProperty("Content-Type", "application/octet-stream")
+                file.inputStream().use { it.copyTo(connection.outputStream) }
+                val code = connection.responseCode
+                if (code !in 200..299) {
+                    throw GradleException("Failed to upload $relativePath to $uploadUrl — HTTP $code: ${connection.responseMessage}")
+                }
             }
             println("Uploaded: $relativePath")
         }
 
         println("Javadoc published to $baseUrl/index.html")
+        println("Latest javadoc at $latestUrl/index.html")
     }
 }
 
