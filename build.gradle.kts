@@ -24,7 +24,6 @@ java {
 group = "com.github.angeschossen"
 version = "1.0.2"
 description = "ApplicationFrameworkAPI"
-java.sourceCompatibility = JavaVersion.VERSION_1_8
 
 tasks {
     jar {
